@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#609A9A9A"
+    android:padding="5dp"
+    >
+
+    <ImageView
+        android:id="@+id/Item_image"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="match_parent"
+        android:src="@drawable/mode1"
+        />
+    <TextView
+        android:id="@+id/Item_txt"
+        android:layout_width="0dp"
+        android:layout_weight="2"
+        android:text="name of sdf df"
+        android:gravity="center"
+        android:layout_height="match_parent"
+        android:textColor="#95000000"
+        android:textAppearance="?android:textAppearanceLarge"
+        />
+</LinearLayout>
