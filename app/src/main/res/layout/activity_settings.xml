@@ -7,7 +7,8 @@
     android:layout_height="match_parent"
     android:padding="16dp"
     android:orientation="vertical"
-    tools:context="app.com.example.mannas.monvieapp.SettingsActivity">
+    android:background="@color/backgroundColor"
+    tools:context=".SettingsActivity_module.SettingsActivity">
 
 
 </FrameLayout>
