@@ -3,24 +3,42 @@
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <!-- Customize your theme here. -->
+        <!--
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
-
+      -->
+        <item name="colorPrimary">#125245</item>
+        <item name="colorPrimaryDark">#7f7f7f</item>
+        <item name="colorAccent">#7f7f7f</item>
+        <item name="android:textColor">@android:color/white</item>
 
         <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
-        <item name="preferenceScreenStyle">@style/Preference.PreferenceScreen</item>
-        <item name="preferenceFragmentCompatStyle">@style/PreferenceFragment</item>
-        <item name="preferenceCategoryStyle">@style/Preference.Category</item>
-        <item name="preferenceStyle">@style/Preference</item>
-        <item name="preferenceInformationStyle">@style/Preference.Information</item>
-        <item name="checkBoxPreferenceStyle">@style/Preference.CheckBoxPreference</item>
-        <item name="switchPreferenceCompatStyle">@style/Preference.SwitchPreferenceCompat</item>
-        <item name="dialogPreferenceStyle">@style/Preference.DialogPreference</item>
-        <item name="editTextPreferenceStyle">@style/Preference.DialogPreference.EditTextPreference</item>
-        <item name="preferenceFragmentListStyle">@style/PreferenceFragmentList</item>
+
+        <item name="android:actionBarStyle">@style/MyAppActionBarTheme</item>
+    </style>
+
+    <style name="MyAppActionBarTheme" parent="android:Theme.Holo.Light">
 
     </style>
+
+
+
+    <style name="MyApp.PopupMenu" parent="android:Widget.Holo.Light.ListPopupWindow">
+
+    </style>
+
+
+
+
+
+
+    <style name="RatingBar" parent="@android:style/Widget.Holo.Light.RatingBar.Indicator">
+        <item name="colorControlNormal">#d3d3d3</item>
+        <item name="colorControlActivated">#ffbb00</item>
+    </style>
+
+    <style name="elivation5dp"/>
 
     <style name="AppTheme.NoActionBar" parent="AppTheme">
         <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
@@ -29,22 +47,16 @@
     </style>
 
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
-    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="AppTheme.PopupOverlay" parent="MyApp.PopupMenu" />
 
 
-
-
-
-
-
-
-    <style name="AppPreference">
-
-    </style>
+    <style name="AppPreference"/>
     <!-- Style for a DialogPreference Entry -->
     <style name="AppPreference.DialogPreference">
         <item name="positiveButtonText">@android:string/ok</item>
         <item name="negativeButtonText">@android:string/cancel</item>
     </style>
+
 
 </resources>
