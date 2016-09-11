@@ -28,6 +28,7 @@ import com.example.mannas.movieapp.MovieObject;
 import com.example.mannas.movieapp.R;
 import com.example.mannas.movieapp.SettingsActivity_module.PreferencesConstants;
 import com.example.mannas.movieapp.SettingsActivity_module.SettingsActivity;
+import com.example.mannas.movieapp.Utility;
 import com.example.mannas.movieapp.data.Contract;
 import com.example.mannas.movieapp.data.MoviesLoader;
 
@@ -41,27 +42,24 @@ import java.util.ArrayList;
  * item details. On tablets, the activity presents the list of items and
  * item details side-by-side using two vertical panes.
  */
-public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks {
+public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks
+{
 
     /**
      * Whether or not the activity is in two-pane mode, i.e. running on a tablet
      * device.
      */
     public static final String LOG_TAG = MainActivity.class.getName();
-    private final int  DB_Updater_ID  = 0;
-    private final int  DB_CursorLoaderID = 1;
-    public static final int DB_FavLoader =2;
 
     RecyclerView recyclerView ;
     TextView RecyclerTitle;
     ImageView RecyclerLoading;
     FloatingActionButton fab;
-    boolean FavIsDisplayed=false;
+    boolean FavIsDisplayed=true  , MovieLoaderInitiated=false;
 
     RecyclerViewAdapter recyclerViewAdapter;
     RecyclerView.LayoutManager manager;
     public ArrayList<MovieObject> Data_ls;
-
 
     String MODE,SortBy;
 
@@ -69,6 +67,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -82,10 +81,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(FavIsDisplayed){//display the Fav + show RecyclerTitle
-                    DisplayHome();
+                if(FavIsDisplayed){
+                    DisplayHome(false);
                 }
-                else{//display the main
+                else{
                     DisplayFav();
                 }
             }
@@ -98,24 +97,20 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         setupRecyclerView();
 
         if(savedInstanceState == null){
-            if(CheckConnection(getBaseContext())){
-                //if the device is connected will update the DB if possible in the BackGround
-                //keep the Local DB updated in the beginning
-                getSupportLoaderManager().initLoader(DB_Updater_ID,null,this);
-            }
-            //sync the RecyclerView with the Local DB
-            DisplayHome();
-
+            DisplayHome(true);
         } else {
-            Data_ls =  savedInstanceState.getParcelableArrayList(MovieObject.ArrayListKey);
+            Data_ls = savedInstanceState.getParcelableArrayList(MovieObject.ArrayListKey);
             if( FavIsDisplayed = savedInstanceState.getBoolean("FavIsDisplayed")) {
-                DisplayFav();
+                FavIsDisplayed = true;
+                //DisplayFav();
             }else {
-                DisplayHome();
+                DisplayHome(false);
             }
         }
 
     }
+
+
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
@@ -131,17 +126,22 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         String Preference_Mode =  getSharedPreferences(getPackageName(),Context.MODE_PRIVATE).getString(PreferencesConstants.Pref_Mode_Key,PreferencesConstants.Pref_Mode_DefVal);
         String Preference_SortBy =  getSharedPreferences(getPackageName(),Context.MODE_PRIVATE).getString(PreferencesConstants.pref_SortBy_Key,PreferencesConstants.pref_SortBy_DefVal);
 
-        if(! SortBy.equals(Preference_SortBy)){ // refresh the Data with the New SortBy
+        if(! SortBy.equals(Preference_SortBy) && !FavIsDisplayed){ // refresh the Data with the New SortBy
             SortBy = Preference_SortBy;
-            getSupportLoaderManager().restartLoader(DB_Updater_ID,null,this);
-            getSupportLoaderManager().restartLoader(DB_CursorLoaderID,null,this);
+            DisplayHome(true);
+        }else if(! SortBy.equals(Preference_SortBy) && FavIsDisplayed) {
+            SortBy = Preference_SortBy;
+            Bundle bundle = new Bundle();
+            bundle.putBoolean("tryOnline",true);
+            getSupportLoaderManager().restartLoader(Utility.Loaders.MovieLoader_ID,bundle,this);
         }
+
         if( ! MODE.equals(Preference_Mode)){ //refresh the Mode
             MODE = Preference_Mode;
             setupRecyclerView();
         }
         if(FavIsDisplayed){
-            getSupportLoaderManager().restartLoader(DB_FavLoader,null,this);
+            DisplayFav();
         }
     }
 
@@ -184,11 +184,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 manager = new StaggeredGridLayoutManager(4,1);
             }
         }
-
         recyclerView.setAdapter(recyclerViewAdapter);
         recyclerView.setLayoutManager(manager);
 
     }
+
     public boolean CheckConnection(Context context) {
 
         ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(context.CONNECTIVITY_SERVICE);
@@ -200,85 +200,60 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
      *  Loads Favs from DB , set the Header , set fab icon
      */
     public void DisplayFav(){
-        FavIsDisplayed = true;
-        recyclerViewAdapter.notifyDataSetChanged(new ArrayList<MovieObject>());
-        RecyclerLoading.setVisibility(View.VISIBLE);
-        getSupportLoaderManager().restartLoader(DB_FavLoader,null,this);
-        RecyclerTitle.setVisibility(View.VISIBLE);
-        fab.setImageResource(R.drawable.ic_home);
+            getSupportLoaderManager().restartLoader( Utility.Loaders.FavLoader_ID, null, this);
+            FavIsDisplayed = true;
+            fab.setImageResource(R.drawable.ic_home);
+            RecyclerTitle.setVisibility(View.VISIBLE);
     }
 
     /**
      *  Loads home from DB, sets header,fab icon
      */
-    public void DisplayHome(){
-        recyclerViewAdapter.notifyDataSetChanged(new ArrayList<MovieObject>());
-        RecyclerLoading.setVisibility(View.VISIBLE);
-        FavIsDisplayed = false;
-        getSupportLoaderManager().initLoader(DB_CursorLoaderID,null,this);
-        RecyclerTitle.setVisibility(View.GONE);
-        fab.setImageResource(R.drawable.ic_fav);
+    public void DisplayHome(boolean tryOnline){
+
+            Bundle bundle = new Bundle();
+            bundle.putBoolean("tryOnline",tryOnline);
+            if(!MovieLoaderInitiated){
+                getSupportLoaderManager().initLoader( Utility.Loaders.MovieLoader_ID,bundle,this);
+                MovieLoaderInitiated =true;
+            }else{
+                getSupportLoaderManager().restartLoader(Utility.Loaders.MovieLoader_ID,bundle,this);
+            }
+            FavIsDisplayed = false;
+            RecyclerTitle.setVisibility(View.GONE);
+            fab.setImageResource(R.drawable.ic_fav);
     }
 
-
-
-    public ArrayList<MovieObject> CursorToArrayList(Cursor cursor){
-        ArrayList<MovieObject> ls = new ArrayList<>();
-        if(cursor.moveToFirst()) {
-            do {
-                MovieObject m = new MovieObject();
-                m.adult = Boolean.getBoolean(cursor.getString(cursor.getColumnIndexOrThrow(Contract.Movie_Entry.columns.adult)));
-                m.original_language = cursor.getString(cursor.getColumnIndexOrThrow(Contract.Movie_Entry.columns.original_language));
-                m.release_date = cursor.getString(cursor.getColumnIndexOrThrow(Contract.Movie_Entry.columns.release_date));
-                m.overview = cursor.getString(cursor.getColumnIndexOrThrow(Contract.Movie_Entry.columns.overview));
-                m.backdrop_path = cursor.getString(cursor.getColumnIndexOrThrow(Contract.Movie_Entry.columns.backdrop_path));
-                m.id = cursor.getInt(cursor.getColumnIndexOrThrow(Contract.Movie_Entry.columns.ID));
-                m.original_title = cursor.getString(cursor.getColumnIndexOrThrow(Contract.Movie_Entry.columns.original_title));
-                m.popularity = Float.valueOf(cursor.getString(cursor.getColumnIndexOrThrow(Contract.Movie_Entry.columns.popularity)));
-                m.poster_path = cursor.getString(cursor.getColumnIndexOrThrow(Contract.Movie_Entry.columns.poster_path));
-                m.title = cursor.getString(cursor.getColumnIndexOrThrow(Contract.Movie_Entry.columns.title));
-                m.video = Boolean.getBoolean(cursor.getString(cursor.getColumnIndexOrThrow(Contract.Movie_Entry.columns.video)));
-                m.vote_count = cursor.getInt(cursor.getColumnIndexOrThrow(Contract.Movie_Entry.columns.vote_count));
-                m.vote_avg = cursor.getFloat(cursor.getColumnIndexOrThrow(Contract.Movie_Entry.columns.vote_avg));
-                ls.add(m);
-            } while (cursor.moveToNext());
-        }
-            return ls;
-    }
 
     @Override
     public Loader onCreateLoader(int id, Bundle args) {
         switch (id){
-            case DB_Updater_ID:
-                return new MoviesLoader(getBaseContext());
-            case DB_CursorLoaderID:
-                return new CursorLoader( getBaseContext() , Contract.Movie_Entry.uri,null,null,null,null);
-            case DB_FavLoader:
-                return new CursorLoader( getBaseContext() , Contract.Fav_Entry.uri,null,null,null,null);
+            case Utility.Loaders.MovieLoader_ID: {
+                RecyclerLoading.setVisibility(View.VISIBLE);
+                return new MoviesLoader(getBaseContext(),args.getBoolean("tryOnline") );
+            }
+            case Utility.Loaders.FavLoader_ID:{
+                RecyclerLoading.setVisibility(View.VISIBLE);
+                return new CursorLoader( getBaseContext() , Contract.Fav_Entry.uri ,null,null,null,null);
+            }
+
         }
         return null;
     }
+
     @Override
     public void onLoadFinished(Loader loader, Object data) {
-                if(loader.getId()==DB_Updater_ID){
-                    // The DB is updated from the Internet
-                }
-                else if(loader.getId() == DB_CursorLoaderID && !FavIsDisplayed ){ //update the Home
-                    ArrayList<MovieObject> DB_ls =  CursorToArrayList(((Cursor) data));
-                    RecyclerLoading.setVisibility(View.GONE);
-                    recyclerViewAdapter.notifyDataSetChanged( this.Data_ls = DB_ls);
-                }
-                else if( loader.getId() == DB_FavLoader && FavIsDisplayed){
-                    ArrayList<MovieObject> DB_ls =  CursorToArrayList(((Cursor) data));
-                    RecyclerLoading.setVisibility(View.GONE);
-                    recyclerViewAdapter.notifyDataSetChanged( this.Data_ls = DB_ls);
-                }
+        if(loader.getId() == Utility.Loaders.MovieLoader_ID && !FavIsDisplayed){
+            recyclerViewAdapter.notifyDataSetChanged( this.Data_ls = ((ArrayList<MovieObject>) data));
+        }
+        else if( loader.getId() == Utility.Loaders.FavLoader_ID && FavIsDisplayed){
+            recyclerViewAdapter.notifyDataSetChanged( this.Data_ls = Utility.CursorToArrayList(((Cursor) data)));
+        }
+        RecyclerLoading.setVisibility(View.GONE);
     }
     @Override
     public void onLoaderReset(Loader loader) {}
-
     public boolean isTwoPane(){return  findViewById(R.id.movie_detail_pane) != null; }
-
 
 
 }

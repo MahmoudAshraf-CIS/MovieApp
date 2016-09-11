@@ -3,11 +3,13 @@ package com.example.mannas.movieapp.data;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.util.Log;
 
 import com.example.mannas.movieapp.MovieObject;
 import com.example.mannas.movieapp.R;
 import com.example.mannas.movieapp.SettingsActivity_module.PreferencesConstants;
+import com.example.mannas.movieapp.Utility;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -32,6 +34,8 @@ public class MoviesLoader extends android.support.v4.content.AsyncTaskLoader<Arr
     final String LOG_TAG = this.getClass().getName();
 
     public ArrayList<MovieObject> mDownloaded_DATA_ls;
+    public static boolean tryOnline = false;
+
 
     /*****  constructing the URl ***/
     final String BASE_URL = "http://api.themoviedb.org/3/movie/";
@@ -40,25 +44,29 @@ public class MoviesLoader extends android.support.v4.content.AsyncTaskLoader<Arr
     String PARAM = "?api_key="+  getContext().getString( R.string.api_key);
     String Server_json = "";
 
-    public MoviesLoader(Context context) {
+    public MoviesLoader(Context context,boolean tryOnline ) {
         super(context);
+        MoviesLoader.tryOnline = tryOnline;
         SORT_PARAM = SP.getString(PreferencesConstants.pref_SortBy_Key, PreferencesConstants.pref_SortBy_DefVal);
-    }
-    public void setSORT_PARAM(String SortBy){
-        this.SORT_PARAM = SortBy;
+
     }
 
     @Override
     public ArrayList<MovieObject> loadInBackground() {
-        if( Download() ){
-            mDownloaded_DATA_ls = new ArrayList<>();
-            parse();
-
-            getContext().getContentResolver().delete(Contract.Movie_Entry.uri,null,null);
-            getContext()
-                    .getContentResolver()
-                    .bulkInsert
-                            (Contract.Movie_Entry.uri, MovieObject.getAsContentValues(mDownloaded_DATA_ls) );
+        if( MoviesLoader.tryOnline ){ //succeeded to load from the Network - repopulate the MovieTabl
+            //// TODO: 9/10/2016 notify the connection is unavilable
+            if( Download()  ){
+                mDownloaded_DATA_ls = new ArrayList<>();
+                parse();
+                new DB_RepopulateTask(getContext(),Contract.Movie_Entry.uri,Utility.AsContentValues(mDownloaded_DATA_ls));
+            }
+            else{//load from the DB
+                Cursor cursor = getContext().getContentResolver().query(Contract.Movie_Entry.uri,null,null,null,null);
+                mDownloaded_DATA_ls = Utility.CursorToArrayList(cursor);
+            }
+        }else{//load from the DB
+            Cursor cursor = getContext().getContentResolver().query(Contract.Movie_Entry.uri,null,null,null,null);
+            mDownloaded_DATA_ls = Utility.CursorToArrayList(cursor);
         }
         return mDownloaded_DATA_ls;
     }
@@ -142,6 +150,7 @@ public class MoviesLoader extends android.support.v4.content.AsyncTaskLoader<Arr
         }
         return  null;
     }
+
 
     @Override
     protected void onStartLoading() {

@@ -5,7 +5,6 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
-import android.widget.Toast;
 
 /**
  * Created by mannas on 9/2/2016.
@@ -28,8 +27,6 @@ public class DB_InsertionTask extends AsyncTask<Void ,Void,Integer> {
     @Override
     protected void onPostExecute(Integer integer) {
         super.onPostExecute(integer);
-        //Toast.makeText(context,"Inserted ", Toast.LENGTH_LONG).show();
-
     }
 
 

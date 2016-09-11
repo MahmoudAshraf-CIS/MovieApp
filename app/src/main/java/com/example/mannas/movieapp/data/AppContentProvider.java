@@ -22,16 +22,16 @@ public class AppContentProvider extends android.content.ContentProvider {
         return true;
     }
 
-    @Nullable
+
     @Override
-    public Cursor query(@Nullable Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
+    public Cursor query( Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
 
         SQLiteDatabase DB = mDBHelper.getReadableDatabase();
         Cursor cursor;
-        if(uri == Contract.Movie_Entry.uri){
+        if(uri.toString().equals(Contract.Movie_Entry.uri.toString())){
             cursor = DB.query(Contract.Movie_Entry.TABLE_NAME,projection,selection,selectionArgs, null,null,sortOrder);
         }
-        else  if(uri == Contract.Fav_Entry.uri){
+        else  if(uri.toString().equals(Contract.Fav_Entry.uri.toString())){
             cursor = DB.query(Contract.Fav_Entry.TABLE_NAME,projection,selection,selectionArgs, null,null,sortOrder);
         }
         else {
@@ -54,11 +54,11 @@ public class AppContentProvider extends android.content.ContentProvider {
     public Uri insert(Uri uri, ContentValues Row) {
 
         SQLiteDatabase DB = mDBHelper.getWritableDatabase();
-        if(uri == Contract.Movie_Entry.uri) {
+        if(uri.toString().equals( Contract.Movie_Entry.uri.toString())) {
            long _id = DB.insert(Contract.Movie_Entry.TABLE_NAME,null,Row);
 
             return Contract.Movie_Entry.uri.buildUpon().appendPath( String.valueOf(_id)).build();
-        }else if (uri == Contract.Fav_Entry.uri){
+        }else if (uri.toString().equals( Contract.Fav_Entry.uri.toString()) ){
             long _id = DB.insert(Contract.Fav_Entry.TABLE_NAME,null,Row);
             return Contract.Fav_Entry.uri.buildUpon().appendPath( String.valueOf(_id)).build();
         }
@@ -69,7 +69,7 @@ public class AppContentProvider extends android.content.ContentProvider {
     @Override
     public int bulkInsert(Uri uri, ContentValues[] values) {
         int numInserted = 0;
-        if(uri == Contract.Movie_Entry.uri) {
+        if(uri.toString().equals( Contract.Movie_Entry.uri.toString())) {
             SQLiteDatabase sqlDB = mDBHelper.getWritableDatabase();
             sqlDB.beginTransaction();
             try {
@@ -95,7 +95,7 @@ public class AppContentProvider extends android.content.ContentProvider {
 
             }
         }
-        else if(uri == Contract.Fav_Entry.uri){
+        else if(uri.toString().equals( Contract.Fav_Entry.uri.toString())){
             SQLiteDatabase sqlDB = mDBHelper.getWritableDatabase();
             sqlDB.beginTransaction();
             try {
@@ -128,13 +128,13 @@ public class AppContentProvider extends android.content.ContentProvider {
     public int delete(Uri uri, String selection, String[] selectionArgs) {
         SQLiteDatabase DB = mDBHelper.getWritableDatabase();
         int deletedCount=0;
-        if(uri == Contract.Movie_Entry.uri && selection== null && selectionArgs==null){ // delete the MovieTable
-           deletedCount = DB.delete(Contract.Movie_Entry.TABLE_NAME,null,null);
-
-        }else if(uri == Contract.Fav_Entry.uri&& selection== null && selectionArgs==null){ //delete the Fav Table
-            DB.delete(Contract.Fav_Entry.TABLE_NAME,null,null);
-
-        }else if(uri == Contract.Fav_Entry.uri && (selection != null || selectionArgs !=null ) ) { //delete from FavTable
+        if(uri.toString().equals(Contract.Movie_Entry.uri.toString()) && selection== null && selectionArgs==null){ // delete the MovieTable
+           //deletedCount = DB.delete(Contract.Movie_Entry.TABLE_NAME,null,null);
+            DB.execSQL("delete from "+ Contract.Movie_Entry.TABLE_NAME);
+        }else if(uri.toString().equals( Contract.Fav_Entry.uri.toString())&& selection== null && selectionArgs==null){ //delete the Fav Table
+            //DB.delete(Contract.Fav_Entry.TABLE_NAME,null,null);
+            DB.execSQL("delete from "+ Contract.Fav_Entry.TABLE_NAME);
+        }else if(uri.toString().equals( Contract.Fav_Entry.uri.toString())&& (selection != null || selectionArgs !=null ) ) { //delete from FavTable
             deletedCount = DB.delete(Contract.Fav_Entry.TABLE_NAME, selection, selectionArgs);
         }
         return deletedCount;

@@ -2,6 +2,7 @@ package com.example.mannas.movieapp.DetailActivity_module;
 
 import android.database.Cursor;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
@@ -22,6 +23,7 @@ import com.example.mannas.movieapp.DetailActivity_module.DetailAdapters.TrailerR
 import com.example.mannas.movieapp.MainActivity_module.MainActivity;
 import com.example.mannas.movieapp.MovieObject;
 import com.example.mannas.movieapp.R;
+import com.example.mannas.movieapp.Utility;
 import com.example.mannas.movieapp.data.Contract;
 import com.example.mannas.movieapp.data.DB_DeletionTask;
 import com.example.mannas.movieapp.data.DB_InsertionTask;
@@ -46,14 +48,15 @@ public class MovieDetailFragment extends Fragment implements LoaderManager.Loade
     boolean mItemStateInFav = false;
 
 
-    final int RowQueryID = 2;
+
+
     FloatingActionButton fab;
 
-    final int TrailerLoaderID = 0;
+    ArrayList<String> Trailers;
     TrailerRecyclerAdapter trailerRecyclerAdapter;
     TextView noTrailersTxt;
 
-    final int ReviewsLoaderID = 1;
+    ArrayList<MovieReview> Reviews;
     ReviewRecyclerAdapter reviewRecyclerAdapter;
     TextView noReviewsTxt;
 
@@ -62,33 +65,48 @@ public class MovieDetailFragment extends Fragment implements LoaderManager.Loade
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments().containsKey(MovieObject.key)) {
-            mItem = (MovieObject) getArguments().get(MovieObject.key);
-        }
-        // Load Trailers
-        trailerRecyclerAdapter = new TrailerRecyclerAdapter(new ArrayList<String>());
-        getLoaderManager().initLoader(TrailerLoaderID,null,this);
-
-        // Load Reviews
-        reviewRecyclerAdapter = new ReviewRecyclerAdapter(new ArrayList<MovieReview>());
-        getLoaderManager().initLoader(ReviewsLoaderID,null,this);
-
-        // query the Fav
-        getLoaderManager().initLoader(RowQueryID,null,this);
-    }
-
-    void UpdateFavUI(){
-        if(getActivity() instanceof MainActivity){
-            getLoaderManager().restartLoader(MainActivity.DB_FavLoader,null, ((MainActivity) getActivity()));
-        }
+    public void onPause() {
+        super.onPause();
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
+    public void onStop() {
+        super.onStop();
     }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        Trailers = new ArrayList<>();
+        Reviews = new ArrayList<>();
+
+        if (getArguments().containsKey(MovieObject.key)) {
+            mItem = (MovieObject) getArguments().get(MovieObject.key);
+        }
+
+        trailerRecyclerAdapter = new TrailerRecyclerAdapter(Trailers);
+
+        // Load Trailers
+        getLoaderManager().initLoader( Utility.Loaders.TrailerLoaderID,null,this);
+
+        reviewRecyclerAdapter = new ReviewRecyclerAdapter(Reviews);
+        // Load Reviews
+        getLoaderManager().initLoader(Utility.Loaders.ReviewsLoaderID,null,this);
+
+        // Load isFav ?
+        getLoaderManager().initLoader(Utility.Loaders.RowQueryID,null,this);
+
+
+    }
+
+
+
+    void UpdateFavUI(){
+        if(getActivity() instanceof MainActivity){
+            getLoaderManager().restartLoader( Utility.Loaders.FavLoader_ID,null, ((MainActivity) getActivity()));
+        }
+    }
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -102,25 +120,23 @@ public class MovieDetailFragment extends Fragment implements LoaderManager.Loade
             public void onClick(View view) {
                 String str="";
                 if(mItemStateInFav ){ // now it is in Fav so delete it
-                    str = "Removed from Your Fav";
+                    str = "Removed From Your Favourites";
                     fab.setImageResource(R.drawable.ic_add);
                     new DB_DeletionTask(getContext(), Contract.Fav_Entry.uri, Contract.Fav_Entry.columns.ID+" = ?", new String[]{ mItem.id.toString()}
                     ).execute();
                     UpdateFavUI();
                 }
                 else {
-                    str = "Added To your Fav";
+                    str = "Added To Your Favourites";
                     fab.setImageResource(R.drawable.ic_delete);
-                    new DB_InsertionTask(getContext(),Contract.Fav_Entry.uri,MovieObject.getAsContentValues(mItem)).execute();
+                    new DB_InsertionTask(getContext(),Contract.Fav_Entry.uri, Utility.AsContentValues(mItem)).execute();
                     UpdateFavUI();
                 }
                 mItemStateInFav = !mItemStateInFav;
-
-                Snackbar.make(view, str, Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-
+                Snackbar.make(view, str, Snackbar.LENGTH_LONG).setAction("Action", null).show();
             }
         });
+
         ImageView poster = (ImageView) rootView.findViewById(R.id.posterImg);
         Picasso.with(poster.getContext()).load("http://image.tmdb.org/t/p/w342/"+mItem.backdrop_path).into(poster);
 
@@ -144,7 +160,6 @@ public class MovieDetailFragment extends Fragment implements LoaderManager.Loade
         RatingBar ratingBar = (RatingBar) rootView.findViewById(R.id.detail_ratingBar);
         ratingBar.setRating(mItem.vote_avg/2);
 
-
         TextView detail_overView = (TextView) rootView.findViewById(R.id.detail_overView);
         detail_overView.setText(mItem.overview);
 
@@ -163,74 +178,72 @@ public class MovieDetailFragment extends Fragment implements LoaderManager.Loade
     }
 
     @Override
-    public void onPause() {
-        super.onPause();
-//        if(mItemStateInFav != mItemInitialyInFav ){ // change required
-//            if(mItemStateInFav){ //add
-//                new DB_InsertionTask(getContext(),Contract.Fav_Entry.uri,MovieObject.getAsContentValues(mItem)).execute();
-//            }else { // remove
-//                new DB_DeletionTask(getContext(), Contract.Fav_Entry.uri,
-//                        Contract.Fav_Entry.columns.ID+" = ?",
-//                        new String[]{ mItem.id.toString()}
-//                ).execute();
-//            }
-//        }
-    }
-
-    @Override
     public Loader onCreateLoader(int id, Bundle args) {
-        if(id == TrailerLoaderID){
-            return  new TrailersLoader(getContext(),mItem.id.toString());
+        switch (id){
+            case Utility.Loaders.TrailerLoaderID:
+                return  new TrailersLoader(getContext(),mItem.id.toString());
+            case Utility.Loaders.ReviewsLoaderID:
+                return  new ReviewsLoader(getContext(),mItem.id.toString());
+            case Utility.Loaders.RowQueryID:
+                return new CursorLoader(getContext(), Contract.Fav_Entry.uri, new String[]{Contract.Fav_Entry.columns.ID },
+                        Contract.Fav_Entry.columns.ID+" = "+mItem.id , null, null );
         }
-        else if(id == ReviewsLoaderID){
-            return  new ReviewsLoader(getContext(),mItem.id.toString());
-        }else if(id == RowQueryID){
-            return new CursorLoader(getContext(),
-                    Contract.Fav_Entry.uri, new String[]{Contract.Fav_Entry.columns.ID },
-                    Contract.Fav_Entry.columns.ID+" = "+mItem.id ,
-                    null,
-                    null );
-        }
-
         return null;
     }
+
+    //ArrayList<String>
+    void onTrailerLoaderFinish( @NonNull Object data){
+
+        Trailers  = ((ArrayList<String>)data);
+        if(Trailers.size()!=0){
+            trailerRecyclerAdapter.notifyDataSetChanged(Trailers);
+            noTrailersTxt.setVisibility(View.GONE);
+        }
+        else {
+            noTrailersTxt.setVisibility(View.VISIBLE);
+        }
+
+    }
+    //ArrayList<MovieReview>
+    void onReviewsLoaderFinish( Object data){
+
+        Reviews = ((ArrayList<MovieReview>) data);
+        if(Reviews.size()!=0){
+            reviewRecyclerAdapter.notifyDataSetChanged(Reviews);
+            noReviewsTxt.setVisibility(View.GONE);
+        }else{
+            noReviewsTxt.setVisibility(View.VISIBLE);
+        }
+    }
+    //Cursor
+    void onRowQueryFinish( Object data ){
+        Cursor cursor = (Cursor) data;
+        if(cursor.moveToFirst()){ // there is date in the cursor So it is in the Fav
+            mItemInitialyInFav = mItemStateInFav = true;
+            fab.setImageResource(R.drawable.ic_delete);
+        }
+        else {
+            mItemInitialyInFav = mItemStateInFav = false;
+            fab.setImageResource(R.drawable.ic_add);
+        }
+    }
+
 
     @Override
     public void onLoadFinished(Loader loader, Object data) {
         if(data!=null){
-            //notifay the Trailer Adapter
-            if(loader.getId()==TrailerLoaderID){
-                ArrayList<String>ls  = ((ArrayList<String>)data);
-                if(ls.size()!=0){
-                    trailerRecyclerAdapter.notifyDataSetChanged(ls);
-                    noTrailersTxt.setVisibility(View.GONE);
+            switch (loader.getId()){
+                case Utility.Loaders.TrailerLoaderID:{
+                    onTrailerLoaderFinish(data); //ArrayList<String>
+                    break;
                 }
-                else {
-                    noTrailersTxt.setVisibility(View.VISIBLE);
+                case Utility.Loaders.ReviewsLoaderID:{
+                    onReviewsLoaderFinish(data); //ArrayList<MovieReview>
+                    break;
                 }
-            }
-            else if(loader.getId()==ReviewsLoaderID){
-                ArrayList<MovieReview> ls = ((ArrayList<MovieReview>) data);
-                if(ls.size()!=0){
-                    reviewRecyclerAdapter.notifyDataSetChanged(ls);
-                    noReviewsTxt.setVisibility(View.GONE);
-                }else{
-                    noReviewsTxt.setVisibility(View.VISIBLE);
-                }
-
-            }else if (loader.getId()==RowQueryID){
-                Cursor cursor = ((Cursor) data);
-                //// TODO: 9/8/2016 the fab icon initialy
-                if(cursor.moveToFirst()){ // there is date in the cursor So it is in the Fav
-                    //Toast.makeText(getContext(),"found",Toast.LENGTH_LONG).show();
-                    mItemInitialyInFav = mItemStateInFav = true;
-                    fab.setImageResource(R.drawable.ic_delete);
-                }
-                else {
-                    //Toast.makeText(getContext()," Not found",Toast.LENGTH_LONG).show();
-                    //new DB_InsertionTask(getContext(),Contract.Fav_Entry.uri).execute(MovieObject.getAsContentValue(mItem));
-                    mItemInitialyInFav = mItemStateInFav = false;
-                    fab.setImageResource(R.drawable.ic_add);
+                case Utility.Loaders.RowQueryID: {
+                  onRowQueryFinish(data); //Cursor
+                    break;
                 }
             }
         }

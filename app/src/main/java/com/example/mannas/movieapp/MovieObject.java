@@ -1,13 +1,8 @@
 package com.example.mannas.movieapp;
 
 
-import android.content.ContentValues;
 import android.os.Parcel;
 import android.os.Parcelable;
-
-import com.example.mannas.movieapp.data.Contract;
-
-import java.util.ArrayList;
 
 /**
  * Created by mannas on 8/13/2016.
@@ -61,38 +56,7 @@ public class MovieObject implements Parcelable {
         this.vote_count = vote_count;
         this.video = video;
     }
-    public static ContentValues getAsContentValue(MovieObject m ){
-        ContentValues values = new ContentValues();
 
-        values.put(Contract.Movie_Entry.columns.ID,  m.id );
-        values.put(Contract.Movie_Entry.columns.adult, m.adult );
-        values.put(Contract.Movie_Entry.columns.backdrop_path, m.backdrop_path );
-        values.put(Contract.Movie_Entry.columns.original_language, m.original_language);
-        values.put(Contract.Movie_Entry.columns.original_title, m.original_title);
-        values.put(Contract.Movie_Entry.columns.overview, m.overview);
-        values.put(Contract.Movie_Entry.columns.popularity, m.popularity );
-        values.put(Contract.Movie_Entry.columns.poster_path,m.poster_path );
-        values.put(Contract.Movie_Entry.columns.release_date, m.release_date);
-        values.put(Contract.Movie_Entry.columns.vote_avg,m.vote_avg );
-        values.put(Contract.Movie_Entry.columns.vote_count, m.vote_count);
-        values.put(Contract.Movie_Entry.columns.video, m.video);
-        values.put(Contract.Movie_Entry.columns.title, m.title);
-
-        return values;
-    }
-
-    public static ContentValues[] getAsContentValues(ArrayList<MovieObject> ls){
-        ContentValues[] c = new ContentValues[ls.size()];
-        for(int i=0;i<ls.size();i++){
-            c[i] = getAsContentValue(ls.get(i));
-        }
-        return c;
-    }
-    public static ContentValues[] getAsContentValues(MovieObject movieObject){
-        ContentValues[] c = new ContentValues[1];
-        c[0] = getAsContentValue(movieObject);
-        return c;
-    }
     protected MovieObject(Parcel in) {
         byte adultVal = in.readByte();
         adult = adultVal == 0x02 ? null : adultVal != 0x00;

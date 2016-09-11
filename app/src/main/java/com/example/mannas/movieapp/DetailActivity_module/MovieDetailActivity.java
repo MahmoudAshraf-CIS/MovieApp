@@ -40,4 +40,13 @@ public class MovieDetailActivity extends AppCompatActivity {
         super.onSaveInstanceState(outState);
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+    }
 }

@@ -16,7 +16,6 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-
 import com.example.mannas.movieapp.R;
 
 import java.util.ArrayList;
